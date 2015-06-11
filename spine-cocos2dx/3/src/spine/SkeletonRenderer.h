@@ -39,6 +39,19 @@ namespace spine {
 
 class PolygonBatch;
 
+struct spRegionAttachmentDynamic
+{
+    float x, y, scaleX, scaleY, rotation, width, height;
+	float r, g, b, a;
+};
+    
+struct pageStatus
+{
+    bool pageState;
+    spRegionAttachment* pageAttachment;
+    spAtlasPage* pagePointer;
+};
+    
 /** Draws a skeleton. */
 class SkeletonRenderer: public cocos2d::Node, public cocos2d::BlendProtocol {
 public:
@@ -46,7 +59,20 @@ public:
 	static SkeletonRenderer* createWithFile (const std::string& skeletonDataFile, spAtlas* atlas, float scale = 1);
 	static SkeletonRenderer* createWithFile (const std::string& skeletonDataFile, const std::string& atlasFile, float scale = 1);
 
-	virtual void update (float deltaTime) override;
+    void floodAttachmentData(spRegionAttachment* ptr ,spRegionAttachment *attachmentToFlood);
+    void initialise();
+    void createAtlasRegionForMap(std::map<std::string,std::string> &mapForAttachment);
+    void modifyAttachmentWithMap(std::map<std::string,std::string> &mapForAttachment);
+    void modifyAttachment(std::map<std::string,std::string> &mapForAttachment);
+    void createAtlasRegionForAttachment(std::string attachmentName,std::string pngName);
+    
+    void reset();
+    void reset(std::string attachmentName);
+    void setAttachmentPng(std::string attachmentName,std::string pngName);
+    spRegionAttachment* createAttachmentWithPng(std::string attachmentName,std::string pngName);
+    void removeAttachment(spRegionAttachment *attachment);
+    
+    virtual void update (float deltaTime) override;
 	virtual void draw (cocos2d::Renderer* renderer, const cocos2d::Mat4& transform, uint32_t transformFlags) override;
 	virtual void drawSkeleton (const cocos2d::Mat4& transform, uint32_t transformFlags);
 	virtual cocos2d::Rect getBoundingBox () const override;
@@ -83,6 +109,12 @@ public:
 	/** @param skin May be 0 for no skin.*/
 	bool setSkin (const char* skinName);
 	
+    //spRegionAttachment* getAttachmentOffset(const std::string& attachmentName,float& x,float& y);
+    spRegionAttachment* getAttachmentOffset(const std::string& attachmentName);
+    
+    spAttachment* getAttachment(const std::string& attachmentName);
+    
+    
 	/* Returns 0 if the slot or attachment was not found. */
 	spAttachment* getAttachment (const std::string& slotName, const std::string& attachmentName) const;
 	/* Returns false if the slot or attachment was not found.
@@ -111,9 +143,12 @@ CC_CONSTRUCTOR_ACCESS:
 
 	void initialize ();
 
-protected:
+public:
 	void setSkeletonData (spSkeletonData* skeletonData, bool ownsSkeletonData);
-	virtual cocos2d::Texture2D* getTexture (spRegionAttachment* attachment) const;
+	
+    const char * getCharacterName(spRegionAttachment* attachment) const;
+    
+    virtual cocos2d::Texture2D* getTexture (spRegionAttachment* attachment) const;
 	virtual cocos2d::Texture2D* getTexture (spMeshAttachment* attachment) const;
 	virtual cocos2d::Texture2D* getTexture (spSkinnedMeshAttachment* attachment) const;
 
@@ -128,6 +163,11 @@ protected:
 	float _timeScale;
 	bool _debugSlots;
 	bool _debugBones;
+    
+    //Equip map and attachmentMap should be removed during destruction.
+    std::map<std::string,pageStatus> equipMap;
+    std::map<std::string,spRegionAttachment*> attachmentMap;
+    
 };
 
 }

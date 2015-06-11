@@ -52,7 +52,9 @@ spRegionAttachment* spRegionAttachment_create (const char* name) {
 }
 
 void spRegionAttachment_setUVs (spRegionAttachment* self, float u, float v, float u2, float v2, int/*bool*/rotate) {
-	if (rotate) {
+	
+    //1 0 0 1
+    if (rotate) {
 		self->uvs[SP_VERTEX_X2] = u;
 		self->uvs[SP_VERTEX_Y2] = v2;
 		self->uvs[SP_VERTEX_X3] = u;
@@ -62,14 +64,14 @@ void spRegionAttachment_setUVs (spRegionAttachment* self, float u, float v, floa
 		self->uvs[SP_VERTEX_X1] = u2;
 		self->uvs[SP_VERTEX_Y1] = v2;
 	} else {
-		self->uvs[SP_VERTEX_X1] = u;
-		self->uvs[SP_VERTEX_Y1] = v2;
-		self->uvs[SP_VERTEX_X2] = u;
-		self->uvs[SP_VERTEX_Y2] = v;
-		self->uvs[SP_VERTEX_X3] = u2;
-		self->uvs[SP_VERTEX_Y3] = v;
-		self->uvs[SP_VERTEX_X4] = u2;
-		self->uvs[SP_VERTEX_Y4] = v2;
+		self->uvs[SP_VERTEX_X1] = u; //1
+		self->uvs[SP_VERTEX_Y1] = v2; //1
+		self->uvs[SP_VERTEX_X2] = u; //1
+		self->uvs[SP_VERTEX_Y2] = v; //0
+		self->uvs[SP_VERTEX_X3] = u2; //0
+		self->uvs[SP_VERTEX_Y3] = v; //0
+		self->uvs[SP_VERTEX_X4] = u2; //0
+		self->uvs[SP_VERTEX_Y4] = v2; //1
 	}
 }
 

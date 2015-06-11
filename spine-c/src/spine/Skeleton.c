@@ -286,7 +286,10 @@ void spSkeleton_setSkin (spSkeleton* self, spSkin* newSkin) {
 				spSlot* slot = self->slots[i];
 				if (slot->data->attachmentName) {
 					spAttachment* attachment = spSkin_getAttachment(newSkin, i, slot->data->attachmentName);
-					if (attachment) spSlot_setAttachment(slot, attachment);
+					
+                    
+                    
+                    if (attachment) spSlot_setAttachment(slot, attachment);
 				}
 			}
 		}

@@ -76,7 +76,10 @@ struct spAtlasPage {
 	spAtlasPage* next;
 };
 
-spAtlasPage* spAtlasPage_create (spAtlas* atlas, const char* name);
+spAtlasPage* spAtlasPage_create_with_filename(const char * name);
+void spAtlasPage_dispose_with_filename(spAtlasPage* self);
+
+    spAtlasPage* spAtlasPage_create (spAtlas* atlas, const char* name);
 void spAtlasPage_dispose (spAtlasPage* self);
 
 #ifdef SPINE_SHORT_NAMES
@@ -106,7 +109,7 @@ typedef spAtlasPage AtlasPage;
 #endif
 
 /**/
-
+    
 typedef struct spAtlasRegion spAtlasRegion;
 struct spAtlasRegion {
 	const char* name;
@@ -119,7 +122,7 @@ struct spAtlasRegion {
 	int/*bool*/flip;
 	int* splits;
 	int* pads;
-
+    
 	spAtlasPage* page;
 
 	spAtlasRegion* next;

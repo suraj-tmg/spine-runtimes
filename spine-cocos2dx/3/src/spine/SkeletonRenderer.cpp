@@ -104,6 +104,16 @@ SkeletonRenderer::~SkeletonRenderer () {
 	spSkeleton_dispose(_skeleton);
 	_batch->release();
 	FREE(_worldVertices);
+    
+    
+    std::map<std::string,pageStatus>::iterator it = equipMap.begin();
+    while(it!=equipMap.end())
+    {
+        this->removeAttachment(it->second.pageAttachment);
+        ++it;
+    }
+    equipMap.clear();
+    
 }
 
 void SkeletonRenderer::initWithData (spSkeletonData* skeletonData, bool ownsSkeletonData) {
@@ -149,7 +159,609 @@ void SkeletonRenderer::draw (Renderer* renderer, const Mat4& transform, uint32_t
 	_drawCommand.func = CC_CALLBACK_0(SkeletonRenderer::drawSkeleton, this, transform, transformFlags);
 	renderer->addCommand(&_drawCommand);
 }
+    
+void SkeletonRenderer::modifyAttachmentWithMap(std::map<std::string,std::string> &mapForAttachment)
+{
+    
+    float* uvs = nullptr;
+	int verticesCount = 0;
+	const int* triangles = nullptr;
+	int trianglesCount = 0;
+	float r = 0, g = 0, b = 0, a = 0,x = 0.0f, y = 0.0f;
+    
+    
+    for (int i = 0, n = _skeleton->slotsCount; i < n; i++) {
+		spSlot* slot = _skeleton->drawOrder[i];
+		if (!slot->attachment) continue;
+		Texture2D *texture = nullptr;
+		switch (slot->attachment->type) {
+            case SP_ATTACHMENT_REGION: {
+                spRegionAttachment* attachment = (spRegionAttachment*)slot->attachment;
+                std::string pngName =  mapForAttachment[getCharacterName(attachment)];
+                
+                //Get offset for png Name from json file.
+                if(pngName.empty()) //if there is no replacement specified then move on .
+                    continue;
+                
+                int lastindex = pngName.find_last_of(".");
+                std::string rawName = pngName.substr(0, lastindex);
+                spRegionAttachment* regionAttachement = this->getAttachmentOffset(rawName);
+                spAtlasPage * page = spAtlasPage_create_with_filename(pngName.c_str());
+                ((spAtlasRegion*)attachment->rendererObject)->page = page;
+                // spAtlasPage * page = ((spAtlasRegion*)attachment->rendererObject)->page;
+                // _spAtlasPage_createTexture( ((spAtlasRegion*)attachment->rendererObject)->page,)
+                
+                
+                
+                
+                
+                Texture2D * tex = (Texture2D*)((spAtlasRegion*)attachment->rendererObject)->page->rendererObject;
+                //((spAtlasRegion*)attachment->rendererObject)->page->rendererObject = (void*)tex;
+                //Texture2D * tex = NULL;
+                //tex =  TextureCache::getInstance()->addImage(pngName);
+                attachment->x = regionAttachement->x;
+                attachment->y = regionAttachement->y;
+                attachment->scaleX = regionAttachement->scaleX;
+                attachment->scaleY = regionAttachement->scaleY;
+                attachment->rotation = regionAttachement->rotation;
+                attachment->width = regionAttachement->width;
+                attachment->height = regionAttachement->height;
+                attachment->r = regionAttachement->r;
+                attachment->g = regionAttachement->g;
+                attachment->b = regionAttachement->b;
+                attachment->a = regionAttachement->a;
+                
+                attachment->regionOffsetX = 0;
+                attachment->regionOffsetY = 0;
+                attachment->regionWidth = tex->getPixelsWide();
+                attachment->regionHeight = tex->getPixelsHigh();
+                attachment->regionOriginalWidth = tex->getPixelsWide();
+                attachment->regionOriginalHeight = tex->getPixelsHigh();
+                attachment->width = attachment->regionWidth*0.3;
+                attachment->height = attachment->regionHeight*0.3;
+                spAtlasRegion* atlasRegion = (spAtlasRegion*)attachment->rendererObject;
+                //spRegionAttachment_setUVs(attachment,0,1,0,1,atlasRegion->rotate);
+                spRegionAttachment_setUVs(attachment,0,0,1,1,atlasRegion->rotate);
+                
+                spRegionAttachment_updateOffset(attachment);
+                
+                
+                break;
+            }
+            default:
+                break;
+        }
+        
+    }
+    
+}
+    
+void SkeletonRenderer::createAtlasRegionForAttachment(std::string attachmentName,std::string pngName)
+{
+    //Object creation happens only once .Atlas region is created based on keys that are present in the map .
+    for (int i = 0, n = _skeleton->slotsCount; i < n; i++) {
+		spSlot* slot = _skeleton->drawOrder[i];
+		if (!slot->attachment) continue;
+		Texture2D *texture = nullptr;
+		switch (slot->attachment->type) {
+            case SP_ATTACHMENT_REGION: {
+                spRegionAttachment* attachment = (spRegionAttachment*)slot->attachment;
+                std::string currentAttachmentName = getCharacterName(attachment);
+                if(attachmentName.compare(currentAttachmentName) == 0)
+                {
+                    spAtlasPage * page = spAtlasPage_create_with_filename(pngName.c_str());
+                    ((spAtlasRegion*)attachment->rendererObject)->page = page; //creatin page.Page contains new texture
+                    
+                    return;
+                }
+            }
+        }
+    }
+}
+    
+void SkeletonRenderer::floodAttachmentData(spRegionAttachment* ptr ,spRegionAttachment *attachmentToFlood)
+{
+    
+   attachmentToFlood->path = ptr->path;
+  attachmentToFlood->rendererObject = ptr->rendererObject;
+  ((spAtlasRegion*)attachmentToFlood->rendererObject)->page =  ((spAtlasRegion*)ptr->rendererObject)->page;
+   attachmentToFlood->x =  ptr->x;
+   attachmentToFlood->y = ptr->y;
+   attachmentToFlood->scaleY = ptr->scaleY;
+   attachmentToFlood->scaleX = ptr->scaleX;
+   attachmentToFlood->rotation = ptr->rotation;
+   attachmentToFlood->width = ptr->width;  //Scale is not applied while flooding ,Because scale is already present.
+   attachmentToFlood->height = ptr->height;
+   attachmentToFlood->r = ptr->r;
+   attachmentToFlood->g = ptr->g;
+   attachmentToFlood->b = ptr->b;
+   attachmentToFlood->a = ptr->a;
+   attachmentToFlood->regionOffsetX = ptr->regionOffsetX;
+   attachmentToFlood->regionOffsetY = ptr->regionOffsetY;
+   attachmentToFlood->regionWidth = ptr->regionWidth;
+   attachmentToFlood->regionHeight = ptr->regionHeight;
+   attachmentToFlood->regionOriginalWidth = ptr->regionOriginalWidth;
+   attachmentToFlood->regionOriginalHeight = ptr->regionOriginalHeight;
 
+    for(int i=0;i<8;i++)
+    {
+       attachmentToFlood->uvs[i] = ptr->uvs[i];
+       ptr->offset[i] = ptr->offset[i];
+    }
+
+}
+    
+void SkeletonRenderer::reset(std::string attachmentNameToReset)
+{
+    float* uvs = nullptr;
+	int verticesCount = 0;
+	const int* triangles = nullptr;
+	int trianglesCount = 0;
+	float r = 0, g = 0, b = 0, a = 0,x = 0.0f, y = 0.0f;
+    
+    for (int i = 0, n = _skeleton->slotsCount; i < n; i++) {
+		spSlot* slot = _skeleton->drawOrder[i];
+		if (!slot->attachment) continue;
+		Texture2D *texture = nullptr;
+		switch (slot->attachment->type) {
+            case SP_ATTACHMENT_REGION: {
+                spRegionAttachment* attachment = (spRegionAttachment*)slot->attachment;
+                std::string attachmentName = getCharacterName(attachment);
+                if(attachmentNameToReset.compare(attachmentName) == 0)
+                {
+                    if(attachmentMap.find(attachmentName) != attachmentMap.end())
+                    {
+                        //Get attachment pointer from map.
+                        spRegionAttachment *_tmpAttachment = attachmentMap[attachmentName];
+                       
+                        //Remove entry from equipMap.
+                        std::map<std::string,pageStatus>::iterator it;
+                        it = equipMap.find (attachmentName);
+                        equipMap.erase (it);
+                       
+                        //Remove texture
+                        this->removeAttachment(attachment);
+                       
+                        /*spAtlasPage * pageToRemove = ((spAtlasRegion*)attachment->rendererObject)->page;
+                        spAtlasPage_dispose_with_filename(pageToRemove);
+                       
+                        //Remove atlas region
+                        spAtlasRegion_dispose((spAtlasRegion*)attachment->rendererObject);
+                        
+                        //Remove the attachment that was created.
+                        _spRegionAttachment_dispose((spAttachment*)attachment);
+                        */
+                        //Set the saved attachment to slot attachment pointer.
+                        slot->attachment = (spAttachment*)_tmpAttachment;
+                        
+                        //spAtlasPage * pageToCheck = ((spAtlasRegion*)attachment->rendererObject)->page;
+                        
+                        //Reset the starting stored attachment .
+                        //this->floodAttachmentData(_tmpAttachment, attachment);
+                        
+                        //spAtlasRegion* atlasRegion = (spAtlasRegion*)_tmpAttachment->rendererObject;
+                        //spRegionAttachment_setUVs(attachment,0,1,0,1,atlasRegion->rotate);
+                        //spRegionAttachment_setUVs(attachment,atlasRegion->u,atlasRegion->v,atlasRegion->u2,atlasRegion->v2,atlasRegion->rotate);
+                        
+                        //spRegionAttachment_updateOffset(attachment);
+                    }
+                }
+                break;
+            }
+            default:
+                break;
+        }
+        
+    }
+}
+    
+    
+void SkeletonRenderer::reset()
+{
+    float* uvs = nullptr;
+	int verticesCount = 0;
+	const int* triangles = nullptr;
+	int trianglesCount = 0;
+	float r = 0, g = 0, b = 0, a = 0,x = 0.0f, y = 0.0f;
+    
+    for (int i = 0, n = _skeleton->slotsCount; i < n; i++) {
+		spSlot* slot = _skeleton->drawOrder[i];
+		if (!slot->attachment) continue;
+		Texture2D *texture = nullptr;
+		switch (slot->attachment->type) {
+            case SP_ATTACHMENT_REGION: {
+                spRegionAttachment* attachment = (spRegionAttachment*)slot->attachment;
+                std::string attachmentName = getCharacterName(attachment);
+               
+                if(attachmentMap.find(attachmentName) == attachmentMap.end())
+                {
+                    spRegionAttachment *_tmpAttachment = attachmentMap[attachmentName];
+                   
+                    //Remove entry from equipMap.
+                    std::map<std::string,pageStatus>::iterator it;
+                    it = equipMap.find (attachmentName);
+                    equipMap.erase (it);
+                    
+
+                    //Removing Atlas page and coupled texture.
+                    spAtlasPage * pageToRemove = ((spAtlasRegion*)attachment->rendererObject)->page;
+                    spAtlasPage_dispose_with_filename(pageToRemove);
+                    
+                    //Reset the starting stored attachment .
+                    this->floodAttachmentData(_tmpAttachment, attachment);
+                    
+                    spAtlasRegion* atlasRegion = (spAtlasRegion*)_tmpAttachment->rendererObject;
+                    //spRegionAttachment_setUVs(attachment,0,1,0,1,atlasRegion->rotate);
+                    spRegionAttachment_setUVs(attachment,atlasRegion->u,atlasRegion->v,atlasRegion->u2,atlasRegion->v2,atlasRegion->rotate);
+                    
+                    spRegionAttachment_updateOffset(attachment);
+                  
+                    //Remove the key from the map
+                    
+                }
+                
+                break;
+            }
+            default:
+                break;
+        }
+        
+    }
+
+}
+    
+void SkeletonRenderer::initialise()
+{
+    for (int i = 0, n = _skeleton->slotsCount; i < n; i++) {
+		spSlot* slot = _skeleton->drawOrder[i];
+		if (!slot->attachment) continue;
+		Texture2D *texture = nullptr;
+		switch (slot->attachment->type) {
+            case SP_ATTACHMENT_REGION: {
+                spRegionAttachment* attachment = (spRegionAttachment*)slot->attachment;
+                std::string currentAttachmentName = getCharacterName(attachment);
+               // equipMap[currentAttachmentName] = false;
+            }
+        }
+    }
+}
+    
+    
+void SkeletonRenderer::setAttachmentPng(std::string attachmentName,std::string pngName)
+{
+    
+  /*
+    float* uvs = nullptr;
+	int verticesCount = 0;
+	const int* triangles = nullptr;
+	int trianglesCount = 0;
+	float r = 0, g = 0, b = 0, a = 0,x = 0.0f, y = 0.0f;
+    
+    for (int i = 0, n = _skeleton->slotsCount; i < n; i++) {
+		spSlot* slot = _skeleton->drawOrder[i];
+		if (!slot->attachment) continue;
+		Texture2D *texture = nullptr;
+		switch (slot->attachment->type) {
+            case SP_ATTACHMENT_REGION: {
+                spRegionAttachment* attachment = (spRegionAttachment*)slot->attachment;
+                std::string currentAttachmentName = getCharacterName(attachment);
+                if(attachmentName.compare(currentAttachmentName) == 0)
+                {
+                    int lastindex = pngName.find_last_of(".");
+                    std::string rawName = pngName.substr(0, lastindex);
+                    Texture2D * tex = NULL;
+                    
+                    if(equipMap.find(attachmentName) == equipMap.end() || equipMap[attachmentName].pageState == false)
+                    {
+                        //ATLAS PAGE DOES NOT EXIST : Page does not exist create it and update map.
+                        //Save the original state of the attachment in Attachment map .
+                        spRegionAttachment *_tempAttachment = new spRegionAttachment();
+                        this->floodAttachmentData(attachment, _tempAttachment);
+                        attachmentMap[currentAttachmentName] = _tempAttachment;
+                        
+                        spAtlasPage * page = spAtlasPage_create_with_filename(pngName.c_str());
+                        ((spAtlasRegion*)attachment->rendererObject)->page = page; //creatin page.Page contains new texture
+                        
+                        equipMap[attachmentName].pagePointer = page;
+                        equipMap[attachmentName].pageState = true;
+                        
+                    }
+                    else                     {
+                        //If attachment exist in the map
+                        spAtlasPage * attachmentPage = ((spAtlasRegion*)attachment->rendererObject)->page;
+                        Texture2D * prevTexture = (Texture2D*)attachmentPage->rendererObject;
+                        if(prevTexture)
+                        {
+                            prevTexture->release();
+                            attachmentPage->rendererObject = NULL;
+                        }
+                        _spAtlasPage_createTexture(attachmentPage,pngName.c_str());
+                    }
+                    
+                    tex = (Texture2D*)((spAtlasRegion*)attachment->rendererObject)->page->rendererObject;
+                    spRegionAttachment* regionAttachement = this->getAttachmentOffset(rawName);
+                    
+                    //((spAtlasRegion*)attachment->rendererObject)->page->rendererObject = (void*)tex;
+                    //Texture2D * tex = NULL;
+                    //tex =  TextureCache::getInstance()->addImage(pngName);
+                    attachment->x = regionAttachement->x;
+                    attachment->y = regionAttachement->y;
+                    attachment->scaleX = regionAttachement->scaleX;
+                    attachment->scaleY = regionAttachement->scaleY;
+                    attachment->rotation = regionAttachement->rotation;
+                    attachment->width = regionAttachement->width;
+                    attachment->height = regionAttachement->height;
+                    attachment->r = regionAttachement->r;
+                    attachment->g = regionAttachement->g;
+                    attachment->b = regionAttachement->b;
+                    attachment->a = regionAttachement->a;
+                
+                    attachment->regionOffsetX = 0;
+                    attachment->regionOffsetY = 0;
+                    attachment->regionWidth = tex->getPixelsWide();
+                    attachment->regionHeight = tex->getPixelsHigh();
+                    attachment->regionOriginalWidth = tex->getPixelsWide();
+                    attachment->regionOriginalHeight = tex->getPixelsHigh();
+                    attachment->width = attachment->regionWidth*0.75f;   //This hard coded value should be taken from scale factor.
+                    attachment->height = attachment->regionHeight*0.75f;
+                    spAtlasRegion* atlasRegion = (spAtlasRegion*)attachment->rendererObject;
+                    //spRegionAttachment_setUVs(attachment,0,1,0,1,atlasRegion->rotate);
+                    spRegionAttachment_setUVs(attachment,0,0,1,1,atlasRegion->rotate);
+                
+                    spRegionAttachment_updateOffset(attachment);
+                
+            
+                break;
+            }
+        }
+        
+    }
+
+}
+
+    */
+    
+    
+    float* uvs = nullptr;
+	int verticesCount = 0;
+	const int* triangles = nullptr;
+	int trianglesCount = 0;
+	float r = 0, g = 0, b = 0, a = 0,x = 0.0f, y = 0.0f;
+    
+    for (int i = 0, n = _skeleton->slotsCount; i < n; i++) {
+		spSlot* slot = _skeleton->drawOrder[i];
+		if (!slot->attachment) continue;
+		Texture2D *texture = nullptr;
+		switch (slot->attachment->type) {
+            case SP_ATTACHMENT_REGION: {
+                spRegionAttachment* attachment = (spRegionAttachment*)slot->attachment;
+                std::string currentAttachmentName = getCharacterName(attachment);
+                spRegionAttachment* newAttachment;
+                
+                if(attachmentName.compare(currentAttachmentName) == 0)
+                {
+                    int lastindex = pngName.find_last_of(".");
+                    std::string rawName = pngName.substr(0, lastindex);
+                    Texture2D * tex = NULL;
+                    
+                    if(equipMap.find(attachmentName) == equipMap.end() || equipMap[attachmentName].pageState == false)
+                    {
+                        //ATLAS PAGE DOES NOT EXIST : Page does not exist create it and update map.
+                        //Save the original state of the attachment in Attachment map .
+                        
+                        //Save the pointer of the original attachment.
+                        attachmentMap[currentAttachmentName] = (spRegionAttachment*)slot->attachment;
+                        void* _tmpRenderObject = attachment->rendererObject; //spAtlasRegion is the render object.
+                        
+                        //New attachment created.Should point to old atlas region .
+                        newAttachment = this->createAttachmentWithPng(attachmentName, pngName);
+                        
+                        /*newAttachment = spRegionAttachment_create(attachmentName.c_str()); //Mem alloc
+                        newAttachment->rendererObject = spAtlasRegion_create();
+                        MALLOC_STR(((spAtlasRegion*)newAttachment->rendererObject)->name, attachmentName.c_str());
+                       
+                        spAtlasPage * page = spAtlasPage_create_with_filename(pngName.c_str()); //Mem alloc
+                        ((spAtlasRegion*)newAttachment->rendererObject)->page = page; //creatin page.Page contains new texture
+                        */
+                        
+                        //Point the current slot to new attachment created.
+                        slot->attachment = (spAttachment*)newAttachment;
+                        attachment = newAttachment;
+                        
+                        //equipMap[attachmentName].pagePointer = page;
+                        equipMap[attachmentName].pageState = true;
+                        equipMap[attachmentName].pageAttachment = newAttachment;
+                    }
+                    else
+                    {
+                        //If attachment exist in the map
+                        spAtlasPage * attachmentPage = ((spAtlasRegion*)attachment->rendererObject)->page;
+                        Texture2D * prevTexture = (Texture2D*)attachmentPage->rendererObject;
+                        if(prevTexture)
+                        {
+                            prevTexture->release();
+                            attachmentPage->rendererObject = NULL;
+                        }
+                        _spAtlasPage_createTexture(attachmentPage,pngName.c_str());
+                    }
+                    
+                    tex = (Texture2D*)((spAtlasRegion*)attachment->rendererObject)->page->rendererObject;
+                    spRegionAttachment* regionAttachement = this->getAttachmentOffset(rawName);
+                    
+                    //((spAtlasRegion*)attachment->rendererObject)->page->rendererObject = (void*)tex;
+                    //Texture2D * tex = NULL;
+                    //tex =  TextureCache::getInstance()->addImage(pngName);
+                    attachment->x = regionAttachement->x;
+                    attachment->y = regionAttachement->y;
+                    attachment->scaleX = regionAttachement->scaleX;
+                    attachment->scaleY = regionAttachement->scaleY;
+                    attachment->rotation = regionAttachement->rotation;
+                    attachment->width = regionAttachement->width;
+                    attachment->height = regionAttachement->height;
+                    attachment->r = regionAttachement->r;
+                    attachment->g = regionAttachement->g;
+                    attachment->b = regionAttachement->b;
+                    attachment->a = regionAttachement->a;
+                    
+                    attachment->regionOffsetX = 0;
+                    attachment->regionOffsetY = 0;
+                    attachment->regionWidth = tex->getPixelsWide();
+                    attachment->regionHeight = tex->getPixelsHigh();
+                    attachment->regionOriginalWidth = tex->getPixelsWide();
+                    attachment->regionOriginalHeight = tex->getPixelsHigh();
+                    attachment->width = attachment->regionWidth*0.75f;   //This hard coded value should be taken from scale factor.
+                    attachment->height = attachment->regionHeight*0.75f;
+                    spAtlasRegion* atlasRegion = (spAtlasRegion*)attachment->rendererObject;
+                    //spRegionAttachment_setUVs(attachment,0,1,0,1,atlasRegion->rotate);
+                    spRegionAttachment_setUVs(attachment,0,0,1,1,atlasRegion->rotate);
+                    
+                    spRegionAttachment_updateOffset(attachment);
+                    
+                    
+                    break;
+                }
+            }
+                
+        }
+        
+    }
+
+    
+    
+}
+    
+    
+spRegionAttachment* SkeletonRenderer::createAttachmentWithPng(std::string attachmentName,std::string pngName)
+{
+    spRegionAttachment * newAttachment =  spRegionAttachment_create(attachmentName.c_str()); //Mem alloc
+    newAttachment->rendererObject = spAtlasRegion_create();
+    MALLOC_STR(((spAtlasRegion*)newAttachment->rendererObject)->name, attachmentName.c_str());
+    
+    spAtlasPage * page = spAtlasPage_create_with_filename(pngName.c_str()); //Mem alloc
+    ((spAtlasRegion*)newAttachment->rendererObject)->page = page; //creatin page.Page contains new texture
+    
+    return newAttachment;
+    
+}
+    
+void SkeletonRenderer::removeAttachment(spRegionAttachment *attachment)
+{
+    //Remove texture
+    if((spAtlasRegion*)attachment && (spAtlasRegion*)attachment->rendererObject)
+    {
+        spAtlasPage * pageToRemove = ((spAtlasRegion*)attachment->rendererObject)->page;
+        if(pageToRemove)
+            spAtlasPage_dispose_with_filename(pageToRemove);
+    }
+    
+    //Remove atlas region
+    if((spAtlasRegion*)attachment && (spAtlasRegion*)attachment->rendererObject)
+        spAtlasRegion_dispose((spAtlasRegion*)attachment->rendererObject);
+    
+    //Remove the attachment that was created.
+    if((spAtlasRegion*)attachment)
+        _spRegionAttachment_dispose((spAttachment*)attachment);
+}
+
+    
+void SkeletonRenderer::createAtlasRegionForMap(std::map<std::string,std::string> &mapForAttachment)
+{
+    //Object creation happens only once .Atlas region is created based on keys that are present in the map .
+    for (int i = 0, n = _skeleton->slotsCount; i < n; i++) {
+		spSlot* slot = _skeleton->drawOrder[i];
+		if (!slot->attachment) continue;
+		Texture2D *texture = nullptr;
+		switch (slot->attachment->type) {
+            case SP_ATTACHMENT_REGION: {
+                spRegionAttachment* attachment = (spRegionAttachment*)slot->attachment;
+                std::string pngName =  mapForAttachment[getCharacterName(attachment)];
+                if(pngName.empty()) //if there is no replacement specified then move on .
+                    continue;
+                
+                
+                
+                spAtlasPage * page = spAtlasPage_create_with_filename(pngName.c_str());
+                ((spAtlasRegion*)attachment->rendererObject)->page = page; //creatin page.Page contains new texture
+            }
+        }
+    }
+}
+
+void SkeletonRenderer::modifyAttachment(std::map<std::string,std::string> &mapForAttachment)
+{
+    float* uvs = nullptr;
+	int verticesCount = 0;
+	const int* triangles = nullptr;
+	int trianglesCount = 0;
+	float r = 0, g = 0, b = 0, a = 0,x = 0.0f, y = 0.0f;
+    
+    
+    for (int i = 0, n = _skeleton->slotsCount; i < n; i++) {
+		spSlot* slot = _skeleton->drawOrder[i];
+		if (!slot->attachment) continue;
+		Texture2D *texture = nullptr;
+		switch (slot->attachment->type) {
+            case SP_ATTACHMENT_REGION: {
+                spRegionAttachment* attachment = (spRegionAttachment*)slot->attachment;
+                std::string pngName =  mapForAttachment[getCharacterName(attachment)];
+                
+                //Get offset for png Name from json file.
+                if(pngName.empty()) //if there is no replacement specified then move on .
+                    continue;
+               
+                int lastindex = pngName.find_last_of(".");
+                std::string rawName = pngName.substr(0, lastindex);
+                spRegionAttachment* regionAttachement = this->getAttachmentOffset(rawName);
+                spAtlasPage * attachmentPage = ((spAtlasRegion*)attachment->rendererObject)->page;
+                Texture2D * prevTexture = (Texture2D*)attachmentPage->rendererObject;
+                if(prevTexture)
+                {
+                    prevTexture->release();
+                    attachmentPage->rendererObject = NULL;
+                }
+                //Creates texture for the page.
+                _spAtlasPage_createTexture(attachmentPage,pngName.c_str());
+                Texture2D * tex = (Texture2D*)((spAtlasRegion*)attachment->rendererObject)->page->rendererObject;
+                //((spAtlasRegion*)attachment->rendererObject)->page->rendererObject = (void*)tex;
+                //Texture2D * tex = NULL;
+                //tex =  TextureCache::getInstance()->addImage(pngName);
+                attachment->x = regionAttachement->x;
+                attachment->y = regionAttachement->y;
+                attachment->scaleX = regionAttachement->scaleX;
+                attachment->scaleY = regionAttachement->scaleY;
+                attachment->rotation = regionAttachement->rotation;
+                attachment->width = regionAttachement->width;
+                attachment->height = regionAttachement->height;
+                attachment->r = regionAttachement->r;
+                attachment->g = regionAttachement->g;
+                attachment->b = regionAttachement->b;
+                attachment->a = regionAttachement->a;
+              
+                attachment->regionOffsetX = 0;
+                attachment->regionOffsetY = 0;
+                attachment->regionWidth = tex->getPixelsWide();
+                attachment->regionHeight = tex->getPixelsHigh();
+                attachment->regionOriginalWidth = tex->getPixelsWide();
+                attachment->regionOriginalHeight = tex->getPixelsHigh();
+                attachment->width = attachment->regionWidth*0.3;
+                attachment->height = attachment->regionHeight*0.3;
+                spAtlasRegion* atlasRegion = (spAtlasRegion*)attachment->rendererObject;
+                //spRegionAttachment_setUVs(attachment,0,1,0,1,atlasRegion->rotate);
+                spRegionAttachment_setUVs(attachment,0,0,1,1,atlasRegion->rotate);
+                
+                spRegionAttachment_updateOffset(attachment);
+                
+                
+                break;
+            }
+            default:
+                break;
+        }
+    
+    }
+    
+}
+    
 void SkeletonRenderer::drawSkeleton (const Mat4 &transform, uint32_t transformFlags) {
 	getGLProgramState()->apply(transform);
 
@@ -161,7 +773,7 @@ void SkeletonRenderer::drawSkeleton (const Mat4 &transform, uint32_t transformFl
 
 	int blendMode = -1;
 	Color4B color;
-	const float* uvs = nullptr;
+    float* uvs = nullptr;
 	int verticesCount = 0;
 	const int* triangles = nullptr;
 	int trianglesCount = 0;
@@ -175,14 +787,14 @@ void SkeletonRenderer::drawSkeleton (const Mat4 &transform, uint32_t transformFl
 			spRegionAttachment* attachment = (spRegionAttachment*)slot->attachment;
 			spRegionAttachment_computeWorldVertices(attachment, slot->bone, _worldVertices);
 			texture = getTexture(attachment);
-			uvs = attachment->uvs;
-			verticesCount = 8;
-			triangles = quadTriangles;
-			trianglesCount = 6;
-			r = attachment->r;
-			g = attachment->g;
-			b = attachment->b;
-			a = attachment->a;
+                uvs = attachment->uvs;
+                verticesCount = 8 ;
+                triangles = quadTriangles;
+                trianglesCount = 6;
+                r = attachment->r;
+                g = attachment->g;
+                b = attachment->b;
+                a = attachment->a;
 			break;
 		}
 		case SP_ATTACHMENT_MESH: {
@@ -289,7 +901,47 @@ void SkeletonRenderer::drawSkeleton (const Mat4 &transform, uint32_t transformFl
 	}
 }
 
+const char * SkeletonRenderer::getCharacterName(spRegionAttachment* attachment) const
+{
+    const char * name =  ((spAtlasRegion*)attachment->rendererObject)->name;
+    log("\"%s\"",name);
+    
+    return name;
+    //std::string textureToLoad = std::string(name) + ".png";
+    //return textureToLoad.c_str();
+}
+    
+    
 Texture2D* SkeletonRenderer::getTexture (spRegionAttachment* attachment) const {
+    
+    // if(strcmp(getCharacterName(attachment),"goggles") == 0)
+    const char * name =  ((spAtlasRegion*)attachment->rendererObject)->name;
+    log("%s",name);
+    //Texture2D * tex;
+    
+    if(strcmp("head",name) == 0)
+    {
+        // std::string textureToLoad = std::string(name) + ".png";
+        //tex =  TextureCache::getInstance()->addImage("HelloWorld.png");
+        
+       /*attachment->uvs[0] = 0;
+        attachment->uvs[1] = 0;
+        
+        attachment->uvs[2] = 0.0f;
+        attachment->uvs[3] = 1.0f;
+        
+        attachment->uvs[4] = 1.0f;
+        attachment->uvs[5] = 1.0f;
+        
+        attachment->uvs[6] = 1.0f;
+        attachment->uvs[7] = 0.0f;*/
+        
+        //tex->retain();
+    
+        //return tex;
+    }
+
+    // CloseSelected.png
 	return (Texture2D*)((spAtlasRegion*)attachment->rendererObject)->page->rendererObject;
 }
 
@@ -363,6 +1015,44 @@ bool SkeletonRenderer::setSkin (const std::string& skinName) {
 }
 bool SkeletonRenderer::setSkin (const char* skinName) {
 	return spSkeleton_setSkinByName(_skeleton, skinName) ? true : false;
+}
+    
+spAttachment* SkeletonRenderer::getAttachment(const std::string& attachmentName)
+{
+    int i;
+    for (i = 0; i < _skeleton->slotsCount; ++i) {
+		spAttachment* attachment = spSkeleton_getAttachmentForSlotIndex(_skeleton, i, attachmentName.c_str());
+        if(attachment != NULL)
+        {
+            if(attachment->type == SP_ATTACHMENT_REGION)
+            {
+                return attachment;
+            }
+        }
+        
+	}
+    return 0;
+}
+    
+    
+    
+spRegionAttachment* SkeletonRenderer::getAttachmentOffset(const std::string& attachmentName)
+{
+    //TO DO get slot name from getcharactername and avoid looping thorugh all slots.
+    int i;
+    for (i = 0; i < _skeleton->slotsCount; ++i) {
+		spAttachment* attachment = spSkeleton_getAttachmentForSlotIndex(_skeleton, i, attachmentName.c_str());
+        if(attachment != NULL)
+        {
+            if(attachment->type == SP_ATTACHMENT_REGION)
+            {
+                spRegionAttachment * region = SUB_CAST(spRegionAttachment, attachment);
+                return region;
+              
+            }
+        }
+	}
+    return 0;
 }
 
 spAttachment* SkeletonRenderer::getAttachment (const std::string& slotName, const std::string& attachmentName) const {

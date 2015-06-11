@@ -45,6 +45,7 @@ spAttachment* _spAtlasAttachmentLoader_newAttachment (spAttachmentLoader* loader
 		}
 		attachment = spRegionAttachment_create(name);
 		attachment->rendererObject = region;
+        
 		spRegionAttachment_setUVs(attachment, region->u, region->v, region->u2, region->v2, region->rotate);
 		attachment->regionOffsetX = region->offsetX;
 		attachment->regionOffsetY = region->offsetY;

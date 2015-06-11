@@ -57,8 +57,11 @@ typedef struct spRegionAttachment {
 
 	float offset[8];
 	float uvs[8];
+    
+    void *renderTarget;
 } spRegionAttachment;
 
+void _spRegionAttachment_dispose (spAttachment* attachment);
 spRegionAttachment* spRegionAttachment_create (const char* name);
 void spRegionAttachment_setUVs (spRegionAttachment* self, float u, float v, float u2, float v2, int/*bool*/rotate);
 void spRegionAttachment_updateOffset (spRegionAttachment* self);

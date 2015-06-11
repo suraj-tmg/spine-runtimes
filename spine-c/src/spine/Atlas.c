@@ -1,4 +1,4 @@
-/******************************************************************************
+ /******************************************************************************
  * Spine Runtimes Software License
  * Version 2.3
  * 
@@ -32,6 +32,27 @@
 #include <spine/Atlas.h>
 #include <ctype.h>
 #include <spine/extension.h>
+
+
+spAtlasPage* spAtlasPage_create_with_filename(const char * name)
+{
+    spAtlasPage* self = NEW(spAtlasPage);
+    if(strcmp(name,"") == 0)
+    {
+        self->rendererObject = NULL;
+        return self;
+    }
+    
+    _spAtlasPage_createTexture(self, name);
+    return self;
+}
+
+void spAtlasPage_dispose_with_filename(spAtlasPage* self) {
+	_spAtlasPage_disposeTexture(self);
+	FREE(self);
+}
+
+
 
 spAtlasPage* spAtlasPage_create (spAtlas* atlas, const char* name) {
 	spAtlasPage* self = NEW(spAtlasPage);
@@ -225,7 +246,7 @@ spAtlas* spAtlas_create (const char* begin, int length, const char* dir, void* r
 				page->uWrap = *str.begin == 'x' ? SP_ATLAS_REPEAT : (*str.begin == 'y' ? SP_ATLAS_CLAMPTOEDGE : SP_ATLAS_REPEAT);
 				page->vWrap = *str.begin == 'x' ? SP_ATLAS_CLAMPTOEDGE : (*str.begin == 'y' ? SP_ATLAS_REPEAT : SP_ATLAS_REPEAT);
 			}
-
+            
 			_spAtlasPage_createTexture(page, path);
 			FREE(path);
 		} else {
@@ -238,7 +259,7 @@ spAtlas* spAtlas_create (const char* begin, int length, const char* dir, void* r
 
 			region->page = page;
 			region->name = mallocString(&str);
-
+            
 			if (!readValue(end, &str)) return abortAtlas(self);
 			region->rotate = equals(&str, "true");
 
