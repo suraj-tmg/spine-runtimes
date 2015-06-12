@@ -164,9 +164,11 @@ public:
 	bool _debugSlots;
 	bool _debugBones;
     
+    
+    float _scale;
     //Equip map and attachmentMap should be removed during destruction.
-    std::map<std::string,pageStatus> equipMap;
-    std::map<std::string,spRegionAttachment*> attachmentMap;
+    std::map<std::string,pageStatus> _equipMap;
+    std::map<std::string,spRegionAttachment*> _attachmentMap;
     
 };
 
