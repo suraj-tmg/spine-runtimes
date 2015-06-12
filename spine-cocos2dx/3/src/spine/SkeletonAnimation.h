@@ -43,6 +43,19 @@ typedef std::function<void(int trackIndex)> EndListener;
 typedef std::function<void(int trackIndex, int loopCount)> CompleteListener;
 typedef std::function<void(int trackIndex, spEvent* event)> EventListener;
 
+    
+/* Sample code showing how to use Api for setting and resetting and attachment.
+//Skeleton files are present in Resource/male/skeleton.atlas
+//Png files are present in Resource/male/hair.png
+ 
+SkeletonAnimation* skeletonNode = SkeletonAnimation::createWithFile("male/skeleton.json","male/skeleton.atlas",0.75f);
+skeletonNode->setAttachmentPng("male/hair", "male/hair1.png");
+skeletonNode->reset("male/hair");
+
+ */
+    
+    
+    
 /** Draws an animated skeleton, providing an AnimationState for applying one or more animations and queuing animations to be
   * played later. */
 class SkeletonAnimation: public SkeletonRenderer {

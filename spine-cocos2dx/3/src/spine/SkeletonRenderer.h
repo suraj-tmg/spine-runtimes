@@ -38,18 +38,11 @@
 namespace spine {
 
 class PolygonBatch;
-
-struct spRegionAttachmentDynamic
-{
-    float x, y, scaleX, scaleY, rotation, width, height;
-	float r, g, b, a;
-};
     
 struct pageStatus
 {
     bool pageState;
     spRegionAttachment* pageAttachment;
-    spAtlasPage* pagePointer;
 };
     
 /** Draws a skeleton. */
@@ -58,18 +51,20 @@ public:
 	static SkeletonRenderer* createWithData (spSkeletonData* skeletonData, bool ownsSkeletonData = false);
 	static SkeletonRenderer* createWithFile (const std::string& skeletonDataFile, spAtlas* atlas, float scale = 1);
 	static SkeletonRenderer* createWithFile (const std::string& skeletonDataFile, const std::string& atlasFile, float scale = 1);
-
-    void floodAttachmentData(spRegionAttachment* ptr ,spRegionAttachment *attachmentToFlood);
-    void initialise();
-    void createAtlasRegionForMap(std::map<std::string,std::string> &mapForAttachment);
-    void modifyAttachmentWithMap(std::map<std::string,std::string> &mapForAttachment);
-    void modifyAttachment(std::map<std::string,std::string> &mapForAttachment);
-    void createAtlasRegionForAttachment(std::string attachmentName,std::string pngName);
     
+    //Reset to original of all attachments
     void reset();
+    
+    //Reset a given attachment
     void reset(std::string attachmentName);
+    
+    //Set png for given attachment
     void setAttachmentPng(std::string attachmentName,std::string pngName);
+    
+    //Create attachmen  with png
     spRegionAttachment* createAttachmentWithPng(std::string attachmentName,std::string pngName);
+    
+    //Removes attachment that is created.
     void removeAttachment(spRegionAttachment *attachment);
     
     virtual void update (float deltaTime) override;
