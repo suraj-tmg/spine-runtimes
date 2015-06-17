@@ -89,7 +89,7 @@ void PolygonBatch::add (const Texture2D* addTexture,
 		vertex->texCoords.u = uvs[i];
 		vertex->texCoords.v = uvs[i + 1];
         
-        log("x,y: (%f, %f) u,v(%f,%f)\n", addVertices[i], addVertices[i+1], uvs[i], uvs[i+1]);
+        //log("x,y: (%f, %f) u,v(%f,%f)\n", addVertices[i], addVertices[i+1], uvs[i], uvs[i+1]);
 	}
 }
 
