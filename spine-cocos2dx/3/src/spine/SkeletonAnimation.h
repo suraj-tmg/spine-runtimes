@@ -49,10 +49,9 @@ typedef std::function<void(int trackIndex, spEvent* event)> EventListener;
 //Png files are present in Resource/male/hair.png
  
 SkeletonAnimation* skeletonNode = SkeletonAnimation::createWithFile("male/skeleton.json","male/skeleton.atlas",0.75f);
-skeletonNode->setAttachmentPng("male/hair", "male/hair1.png");
-skeletonNode->reset("male/hair");
-
- */
+skeletonNode->setAttachmentPng("hair", "check/pngs/hair2.png");
+skeletonNode->reset("hair");
+*/
     
     
     

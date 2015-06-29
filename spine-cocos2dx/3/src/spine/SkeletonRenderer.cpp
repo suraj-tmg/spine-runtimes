@@ -272,6 +272,8 @@ void SkeletonRenderer::setAttachmentPng(std::string attachmentName,std::string p
                 {
                     int lastindex = pngName.find_last_of(".");
                     std::string rawName = pngName.substr(0, lastindex);
+                    rawName = rawName.substr(rawName.find_last_of("/\\") + 1);
+                    
                     Texture2D * tex = NULL;
                     
                     if(_equipMap.find(attachmentName) == _equipMap.end() || _equipMap[attachmentName].pageState == false)

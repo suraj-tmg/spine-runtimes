@@ -58,7 +58,7 @@ public:
     //Reset a given attachment
     void reset(std::string attachmentName);
     
-    //Set png for given attachment
+    //Set png for given attachment .First parameter is attachment name present in json ,second parameter is path to png file in users system .
     void setAttachmentPng(std::string attachmentName,std::string pngName);
     
     //Create attachmen  with png
