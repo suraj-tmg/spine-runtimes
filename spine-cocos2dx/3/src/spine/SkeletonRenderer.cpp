@@ -249,6 +249,51 @@ void SkeletonRenderer::reset()
     }
 
 }
+
+void SkeletonRenderer::setVisibilityForAttachment(std::string attachmentName,bool value)
+{
+    if(_propertiesMap.find(attachmentName) == _propertiesMap.end())
+    {
+        attachmentProperties prop;
+        prop.visibility = value;
+        prop.isColorSet = false;
+        _propertiesMap[attachmentName] = prop;
+    }
+    else
+    {
+        _propertiesMap[attachmentName].visibility = value;
+        _propertiesMap[attachmentName].isColorSet = _propertiesMap[attachmentName].isColorSet == true ? true : false;
+    }
+}
+    
+void SkeletonRenderer::setColorForAttachment(std::string attachmentName,cocos2d::ccColor4B col)
+{
+    if(_propertiesMap.find(attachmentName) == _propertiesMap.end())
+    {
+        attachmentProperties prop;
+        prop.isColorSet = true;
+        prop.r = col.r;
+        prop.g = col.g;
+        prop.b = col.b;
+        prop.a = col.a;
+        prop.visibility = true;
+        
+        _propertiesMap[attachmentName] = prop;
+    }
+    else
+    {
+        _propertiesMap[attachmentName].isColorSet = true;
+        _propertiesMap[attachmentName].r = col.r;
+        _propertiesMap[attachmentName].g = col.g;
+        _propertiesMap[attachmentName].b = col.b;
+        _propertiesMap[attachmentName].a = col.a;
+    }
+}
+
+bool SkeletonRenderer::isAttachmentVisible(std::string attachmentName)
+{
+   return  _propertiesMap.find(attachmentName) == _propertiesMap.end() ? true : _propertiesMap[attachmentName].visibility;
+}
     
 void SkeletonRenderer::setAttachmentPng(std::string attachmentName,std::string pngName)
 {
@@ -257,6 +302,8 @@ void SkeletonRenderer::setAttachmentPng(std::string attachmentName,std::string p
 	const int* triangles = nullptr;
 	int trianglesCount = 0;
 	float r = 0, g = 0, b = 0, a = 0,x = 0.0f, y = 0.0f;
+    
+    std::map<std::string,bool> _avoidDuplication;
     
     for (int i = 0, n = _skeleton->slotsCount; i < n; i++) {
 		spSlot* slot = _skeleton->drawOrder[i];
@@ -270,6 +317,12 @@ void SkeletonRenderer::setAttachmentPng(std::string attachmentName,std::string p
                 
                 if(attachmentName.compare(currentAttachmentName) == 0)
                 {
+                    if(_avoidDuplication.find(currentAttachmentName) != _avoidDuplication.end())
+                    {
+                        return;
+                    }
+                    _avoidDuplication[currentAttachmentName] = true;
+                    
                     int lastindex = pngName.find_last_of(".");
                     std::string rawName = pngName.substr(0, lastindex);
                     rawName = rawName.substr(rawName.find_last_of("/\\") + 1);
@@ -287,6 +340,7 @@ void SkeletonRenderer::setAttachmentPng(std::string attachmentName,std::string p
                         
                         //New attachment created.Should point to old atlas region .
                         newAttachment = this->createAttachmentWithPng(attachmentName, pngName);
+                        
                         
                         //Point the current slot to new attachment created.
                         slot->attachment = (spAttachment*)newAttachment;
@@ -408,7 +462,22 @@ void SkeletonRenderer::drawSkeleton (const Mat4 &transform, uint32_t transformFl
 		switch (slot->attachment->type) {
 		case SP_ATTACHMENT_REGION: {
 			spRegionAttachment* attachment = (spRegionAttachment*)slot->attachment;
-			spRegionAttachment_computeWorldVertices(attachment, slot->bone, _worldVertices);
+			
+            if( _propertiesMap.find(getCharacterName(attachment)) != _propertiesMap.end())
+            {
+                if(!_propertiesMap[getCharacterName(attachment)].visibility)
+                {
+                    continue;
+                }
+                else if(_propertiesMap[getCharacterName(attachment)].isColorSet)
+                {
+                  attachment->r =  _propertiesMap[getCharacterName(attachment)].r ;
+                  attachment->g =  _propertiesMap[getCharacterName(attachment)].g;
+                  attachment->b =  _propertiesMap[getCharacterName(attachment)].b;
+//                  attachment->a =  _propertiesMap[getCharacterName(attachment)].a;
+                }
+            }
+            spRegionAttachment_computeWorldVertices(attachment, slot->bone, _worldVertices);
 			texture = getTexture(attachment);
                 uvs = attachment->uvs;
                 verticesCount = 8 ;

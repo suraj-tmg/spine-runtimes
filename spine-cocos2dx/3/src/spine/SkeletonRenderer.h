@@ -45,6 +45,18 @@ struct pageStatus
     spRegionAttachment* pageAttachment;
 };
     
+struct attachmentProperties
+{
+    bool visibility;
+    bool isColorSet;
+    float r;
+    float g;
+    float b;
+    float a;
+    //spRegionAttachment* pageAttachment;
+};
+    
+    
 /** Draws a skeleton. */
 class SkeletonRenderer: public cocos2d::Node, public cocos2d::BlendProtocol {
 public:
@@ -58,8 +70,18 @@ public:
     //Reset a given attachment
     void reset(std::string attachmentName);
     
-    //Set png for given attachment .First parameter is attachment name present in json ,second parameter is path to png file in users system .
+    //Set visibility for current attachment
+    void setVisibilityForAttachment(std::string attachmentName,bool value);
+    
+    bool isAttachmentVisible(std::string attachmentName);
+    
+    //Set color for current attachment
+    void setColorForAttachment(std::string attachmentName,cocos2d::ccColor4B col);
+    
+    //Set png for given attachment
     void setAttachmentPng(std::string attachmentName,std::string pngName);
+    
+    
     
     //Create attachmen  with png
     spRegionAttachment* createAttachmentWithPng(std::string attachmentName,std::string pngName);
@@ -161,6 +183,10 @@ public:
     
     
     float _scale;
+    
+    
+    std::map<std::string,attachmentProperties> _propertiesMap;
+    
     //Equip map and attachmentMap should be removed during destruction.
     std::map<std::string,pageStatus> _equipMap;
     std::map<std::string,spRegionAttachment*> _attachmentMap;
